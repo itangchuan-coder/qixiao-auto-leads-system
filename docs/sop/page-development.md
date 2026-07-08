@@ -10,10 +10,11 @@
 2. 明确字段和按钮：哪些信息要展示，哪些动作要操作。
 3. 在 `src/domain/types.ts` 补充业务类型。
 4. 在 `src/domain/mockData.ts` 补充模拟数据。
-5. 在 `src/App.tsx` 增加菜单和页面渲染。
-6. 使用 Ant Design 的表格、表单、弹窗、抽屉等组件。
-7. 运行 `pnpm build` 检查类型和构建。
-8. 更新对应 SOP。
+5. 优先把默认值、选项配置、状态流转规则放到独立 domain 文件，不要全部堆在 `src/App.tsx`。
+6. 在 `src/App.tsx` 增加菜单和页面渲染。
+7. 使用 Ant Design 的表格、表单、弹窗、抽屉等组件。
+8. 运行 `pnpm build` 检查类型和构建。
+9. 更新对应 SOP。
 
 ## 注意事项
 

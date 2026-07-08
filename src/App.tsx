@@ -31,27 +31,17 @@ import {
 import type { MenuProps, TableColumnsType, UploadProps } from 'antd'
 import {
   AuditOutlined,
-  BarChartOutlined,
   CloudUploadOutlined,
-  DashboardOutlined,
-  DatabaseOutlined,
   ExportOutlined,
   FieldTimeOutlined,
-  FileSearchOutlined,
-  FileProtectOutlined,
-  FolderOpenOutlined,
-  FundProjectionScreenOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
-  ShopOutlined,
-  TeamOutlined,
   WalletOutlined,
 } from '@ant-design/icons'
 import * as XLSX from 'xlsx'
 import './App.css'
+import { menuItems, pageByPath, pagePaths } from './app/navigation'
 import { SmartSelect } from './components/SmartSelect'
 import {
-  accountPeriodLabels,
   batchLeadNames,
   buildPersonalDashboard,
   canManageFlow,
@@ -65,28 +55,54 @@ import {
   findDuplicatePhones,
   dealBaseStatusLabels,
   customerProjectStatusLabels,
-  customerProjectTypeLabels,
   getQuotationRiskTags,
   isContractExpiringSoon,
-  paymentModeLabels,
-  platformBusinessNameLabels,
   phoneForRole,
   purchaseTimeframeLabels,
-  quotationContentTypeLabels,
-  quotationSourceTypeLabels,
   quotationStatusLabels,
-  requirementJudgementTypeLabels,
   resolveTargetName,
   roleLabels,
-  settlementModeLabels,
   statusLabels,
-  submissionMethodLabels,
-  supplyContentTypeLabels,
-  supplyTargetLabels,
-  supplierStatusLabels,
-  supplierTypeLabels,
 } from './domain/helpers'
+import {
+  accountPeriodOptions,
+  customerProjectNextStatusOptions,
+  customerProjectStatusOptions,
+  customerProjectTypeOptions,
+  dealBaseNextStatusOptions,
+  dealBaseStatusOptions,
+  dealCycleOptions,
+  defaultCustomerProjectSearchValues,
+  defaultCustomerProjectValues,
+  defaultDealBaseSearchValues,
+  defaultDealBaseValues,
+  defaultLeadValues,
+  defaultQuotationSearchValues,
+  defaultQuotationValues,
+  defaultSearchValues,
+  defaultSupplierSearchValues,
+  defaultSupplierValues,
+  invoiceTypeOptions,
+  leadStatusOptions,
+  nextStatusOptions,
+  paymentModeOptions,
+  platformBusinessNameOptions,
+  quotationContentTypeOptions,
+  quotationNextStatusOptions,
+  quotationSourceTypeOptions,
+  quotationStatusOptions,
+  requirementJudgementTypeOptions,
+  settlementModeOptions,
+  statusColor,
+  statusFlow,
+  submissionMethodOptions,
+  supplyContentTypeOptions,
+  supplierStatusOptions,
+  supplierTypeOptions,
+  supplyTargetOptions,
+} from './domain/formDefaults'
 import { automakerOptions, brandOptions, cityOptions, modelOptions } from './domain/referenceData'
+import { matchesSmartValue } from './domain/search'
 import { useLeadSystemStore } from './domain/store'
 import type {
   DeliveryBatch,
@@ -116,328 +132,6 @@ import type {
 
 const { Header, Sider, Content } = Layout
 const { Title, Text, Paragraph } = Typography
-
-type PageKey =
-  | 'dashboard'
-  | 'personalDashboard'
-  | 'customerProjects'
-  | 'leads'
-  | 'quotations'
-  | 'import'
-  | 'suppliers'
-  | 'dealBase'
-  | 'batches'
-  | 'targets'
-  | 'sop'
-  | 'permissions'
-
-const pagePaths: Record<PageKey, string> = {
-  dashboard: '/',
-  personalDashboard: '/personal-dashboard',
-  customerProjects: '/customer-projects',
-  leads: '/leads',
-  quotations: '/quotations',
-  import: '/import',
-  suppliers: '/suppliers',
-  dealBase: '/deal-base',
-  batches: '/batches',
-  targets: '/targets',
-  sop: '/sop',
-  permissions: '/permissions',
-}
-
-const pageByPath = Object.fromEntries(Object.entries(pagePaths).map(([page, path]) => [path, page])) as Record<string, PageKey>
-
-const statusColor: Record<LeadStatus, string> = {
-  new: 'blue',
-  pending_clean: 'gold',
-  valid: 'green',
-  duplicate: 'orange',
-  delivered: 'purple',
-  invalid: 'red',
-}
-
-const menuItems: MenuProps['items'] = [
-  { key: 'dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  { key: 'personalDashboard', icon: <FundProjectionScreenOutlined />, label: '个人业务驾驶舱' },
-  { key: 'customerProjects', icon: <FolderOpenOutlined />, label: '客户项目管理' },
-  { key: 'quotations', icon: <FileSearchOutlined />, label: '报价系统' },
-  { key: 'leads', icon: <DatabaseOutlined />, label: '线索管理' },
-  { key: 'import', icon: <CloudUploadOutlined />, label: '线索导入' },
-  { key: 'suppliers', icon: <ShopOutlined />, label: '供应商管理' },
-  { key: 'dealBase', icon: <AuditOutlined />, label: '成交开拓基地' },
-  { key: 'batches', icon: <FileProtectOutlined />, label: '交付批次' },
-  { key: 'targets', icon: <TeamOutlined />, label: '交付对象' },
-  { key: 'sop', icon: <BarChartOutlined />, label: '流程/SOP' },
-  { key: 'permissions', icon: <SafetyCertificateOutlined />, label: '权限配置占位' },
-]
-
-const leadStatusOptions = Object.entries(statusLabels).map(([value, label]) => ({ value, label }))
-
-const supplierTypeOptions = Object.entries(supplierTypeLabels).map(([value, label]) => ({ value, label }))
-
-const supplierStatusOptions = Object.entries(supplierStatusLabels).map(([value, label]) => ({ value, label }))
-
-const paymentModeOptions = Object.entries(paymentModeLabels).map(([value, label]) => ({ value, label }))
-
-const accountPeriodOptions = Object.entries(accountPeriodLabels).map(([value, label]) => ({ value, label }))
-
-const dealBaseStatusOptions = Object.entries(dealBaseStatusLabels).map(([value, label]) => ({ value, label }))
-
-const customerProjectTypeOptions = Object.entries(customerProjectTypeLabels).map(([value, label]) => ({ value, label }))
-
-const supplyTargetOptions = Object.entries(supplyTargetLabels).map(([value, label]) => ({ value, label }))
-
-const platformBusinessNameOptions = Object.entries(platformBusinessNameLabels).map(([value, label]) => ({ value, label }))
-
-const supplyContentTypeOptions = Object.entries(supplyContentTypeLabels).map(([value, label]) => ({ value, label }))
-
-const settlementModeOptions = Object.entries(settlementModeLabels).map(([value, label]) => ({ value, label }))
-
-const invoiceTypeOptions = [
-  { value: 'general_taxpayer', label: '一般纳税人' },
-  { value: 'small_scale', label: '小规模' },
-  { value: 'private_transfer', label: '私人转账' },
-  { value: 'other', label: '其他' },
-]
-
-const dealCycleOptions = [
-  { value: 't1', label: 'T+1' },
-  { value: 't2', label: 'T+2' },
-  { value: 't3', label: 'T+3' },
-  { value: 't30', label: 'T+30' },
-  { value: 'other', label: '其他' },
-]
-
-const customerProjectStatusOptions = Object.entries(customerProjectStatusLabels).map(([value, label]) => ({ value, label }))
-
-const quotationStatusOptions = Object.entries(quotationStatusLabels).map(([value, label]) => ({ value, label }))
-
-const quotationSourceTypeOptions = Object.entries(quotationSourceTypeLabels).map(([value, label]) => ({ value, label }))
-
-const submissionMethodOptions = Object.entries(submissionMethodLabels).map(([value, label]) => ({ value, label }))
-
-const quotationContentTypeOptions = Object.entries(quotationContentTypeLabels).map(([value, label]) => ({ value, label }))
-
-const requirementJudgementTypeOptions = Object.entries(requirementJudgementTypeLabels).map(([value, label]) => ({
-  value,
-  label,
-}))
-
-const defaultLeadValues: LeadFormValues = {
-  name: '',
-  phone: '',
-  city: '',
-  interestedBrand: '',
-  interestedModel: '',
-  budget: '',
-  purchaseTimeframe: 'unknown',
-  source: '',
-  status: 'new',
-  owner: '运营A',
-  note: '',
-}
-
-const defaultSearchValues: LeadSearchValues = {
-  keyword: '',
-  city: '',
-  brand: '',
-  source: '',
-}
-
-const defaultSupplierSearchValues: SupplierSearchValues = {
-  keyword: '',
-}
-
-const defaultSupplierValues: SupplierFormValues = {
-  name: '',
-  type: 'channel',
-  contact: '',
-  phone: '',
-  contractStart: '',
-  contractEnd: '',
-  paymentMode: 'postpaid',
-  accountPeriod: '30_days',
-  status: 'active',
-  note: '',
-}
-
-const defaultDealBaseSearchValues: DealBaseSearchValues = {
-  keyword: '',
-  city: '',
-  brand: '',
-  supplyModel: '',
-}
-
-const defaultDealBaseValues: DealBaseFormValues = {
-  city: '',
-  brand: '',
-  dealer: '',
-  contact: '',
-  phone: '',
-  position: '',
-  supplyModel: '',
-  supplyContent: '',
-  supplyProof: '',
-  supplyTime: '',
-  isValid: true,
-  paymentMode: 'postpaid',
-  amount: 0,
-  capacity: '',
-  owner: '开拓运营A',
-  payer: '',
-  paymentTime: '',
-  status: 'to_contact',
-  isSuccess: false,
-  failureReason: '',
-  companyBearsCost: false,
-  note: '',
-}
-
-const defaultCustomerProjectSearchValues: CustomerProjectSearchValues = {
-  keyword: '',
-  oemBrand: '',
-}
-
-const defaultCustomerProjectValues: CustomerProjectFormValues = {
-  customerName: '',
-  projectType: 'normal',
-  supplyTarget: 'other',
-  oemBrand: '',
-  isLiveBusiness: false,
-  platformBusinessName: 'other',
-  supplyContentType: 'lead',
-  demandVolume: '',
-  pushTime: '',
-  salesOwner: '销售A',
-  operationOwner: '运营A',
-  status: 'pending',
-  requiresFirstTouch: false,
-  effectiveRateRequirement: '',
-  systemDedupValid: true,
-  pushSuccess: false,
-  supportsPreciseDelivery: false,
-  dealCycle: 'other',
-  requiresDealProof: false,
-  dealProofType: '',
-  requiresArrivalRecording: false,
-  requiresArrivalProof: false,
-  requiresSystemArrivalConfirm: false,
-  maxDealsPerStore: '不超过3单',
-  storeRequirementNote: '',
-  contractSigned: false,
-  contractNo: '',
-  downPaymentAmount: 0,
-  downPaymentReceived: false,
-  settlementMode: 'monthly',
-  accountPeriod: '30_days',
-  invoiceType: 'general_taxpayer',
-  unitPrice: 0,
-  finalUnitPrice: 0,
-  finalSettlementRatio: 1,
-  finalSettlementAmount: 0,
-  settlementStandard: '客户给出数据为准',
-  lossRatio: 0,
-  settlementNote: '',
-  requirementNote: '',
-}
-
-const defaultQuotationSearchValues: QuotationSearchValues = {
-  keyword: '',
-  city: '',
-  brand: '',
-}
-
-const defaultQuotationValues: QuotationFormValues = {
-  customerName: '',
-  demander: '',
-  demandTime: '',
-  cityScope: [],
-  carBrand: '',
-  carModel: '',
-  contentType: 'lead',
-  demandVolume: '',
-  targetPrice: 0,
-  needsQuotation: true,
-  requiresPingAnPolicy: false,
-  supportsPreciseDelivery: false,
-  submissionMethod: 'spreadsheet',
-  canQrToLinkWhitelist: false,
-  requiresVerificationCode: false,
-  requiresDeal: false,
-  requiredDealRatio: '',
-  requiresArrival: false,
-  judgementType: 'system',
-  judgementStandard: '',
-  upstreamQuotePrice: 0,
-  upstreamCapacity: '',
-  upstreamSupplier: '',
-  ownedQuotePrice: 0,
-  ownedCapacity: '',
-  ownedOwner: '',
-  recommendedPrice: 0,
-  grossMargin: 0,
-  salesOwner: '销售A',
-  operationOwner: '运营A',
-  channelOwner: '渠道运营A',
-  status: 'new',
-  requirementNote: '',
-  quoteNote: '',
-}
-
-const customerProjectNextStatusOptions: Partial<Record<CustomerProjectStatus, CustomerProjectStatus[]>> = {
-  pending: ['active', 'paused'],
-  active: ['paused', 'completed'],
-  paused: ['active', 'completed'],
-  completed: ['settled'],
-  settled: [],
-}
-
-const dealBaseNextStatusOptions: Partial<Record<DealBaseStatus, DealBaseStatus[]>> = {
-  to_contact: ['connected', 'failed'],
-  connected: ['available', 'failed'],
-  available: ['reserved', 'failed'],
-  reserved: ['delivered', 'failed'],
-  delivered: ['success', 'failed'],
-  success: [],
-  failed: [],
-}
-
-const quotationNextStatusOptions: Partial<Record<QuotationStatus, QuotationStatus[]>> = {
-  new: ['requirement_confirming', 'archived'],
-  requirement_confirming: ['sourcing', 'archived'],
-  sourcing: ['quoted', 'archived'],
-  quoted: ['won', 'lost'],
-  won: ['archived'],
-  lost: ['archived'],
-  archived: [],
-}
-
-const statusFlow: LeadStatus[] = ['new', 'pending_clean', 'valid', 'delivered', 'invalid']
-
-const nextStatusOptions: Partial<Record<LeadStatus, LeadStatus[]>> = {
-  new: ['pending_clean', 'invalid'],
-  pending_clean: ['valid', 'duplicate', 'invalid'],
-  valid: ['delivered', 'invalid'],
-  duplicate: ['valid', 'invalid'],
-  delivered: [],
-  invalid: [],
-}
-
-const normalizeSearch = (value: string) => value.trim().toLowerCase().replace(/\s+/g, '')
-
-const matchesSmartValue = (value: string, keyword: string, optionPools: Array<typeof cityOptions>) => {
-  const normalizedKeyword = normalizeSearch(keyword)
-  if (!normalizedKeyword) return true
-  if (normalizeSearch(value).includes(normalizedKeyword)) return true
-
-  const option = optionPools.flat().find((item) => item.value === value || item.label === value)
-  if (!option) return false
-
-  return [option.label, option.value, option.pinyin, option.initials, ...(option.aliases ?? [])]
-    .map(normalizeSearch)
-    .some((candidate) => candidate.includes(normalizedKeyword) || normalizedKeyword.includes(candidate))
-}
 
 function App() {
   const { message } = AntApp.useApp()
