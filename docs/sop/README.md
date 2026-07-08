@@ -5,6 +5,7 @@
 ## 已建立 SOP
 
 - [开发环境搭建](./development-setup.md)
+- [项目长期开发规范](./project-governance.md)
 - [页面开发流程](./page-development.md)
 - [个人业务驾驶舱流程](./personal-dashboard.md)
 - [客户项目管理流程](./customer-project-management.md)
