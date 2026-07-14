@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   Alert,
   App as AntApp,
@@ -14,8 +14,6 @@ import {
   Flex,
   Form,
   Input,
-  Layout,
-  Menu,
   Modal,
   Progress,
   Select,
@@ -26,7 +24,6 @@ import {
   Timeline,
   Typography,
   Upload,
-  theme,
 } from 'antd'
 import type { TableColumnsType, UploadProps } from 'antd'
 import {
@@ -39,9 +36,11 @@ import {
 } from '@ant-design/icons'
 import * as XLSX from 'xlsx'
 import './App.css'
-import { menuItems, pageByPath, pagePaths } from './app/navigation'
+import { pageByPath } from './app/navigation'
 import type { PageKey } from './app/navigation'
 import { SmartSelect } from './components/SmartSelect'
+import { ApplicationShell } from './components/ApplicationShell'
+import { CustomerProjectsPage } from './pages/customerProjects/CustomerProjectsPage'
 import {
   accountPeriodLabels,
   batchLeadNames,
@@ -146,19 +145,13 @@ import type {
   SupplierFormValues,
   SupplierSearchValues,
   SupplierStatus,
-  UserRole,
 } from './domain/types'
 
-const { Header, Sider, Content } = Layout
 const { Title, Text, Paragraph } = Typography
 
 function App() {
   const { message } = AntApp.useApp()
   const location = useLocation()
-  const navigate = useNavigate()
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken()
   const currentPage = pageByPath[location.pathname] ?? 'dashboard'
   const {
     role,
@@ -2095,7 +2088,7 @@ function App() {
   const pageMap: Record<PageKey, ReactNode> = {
     dashboard: renderDashboard(),
     personalDashboard: renderPersonalDashboard(),
-    customerProjects: renderCustomerProjects(),
+    customerProjects: currentPage === 'customerProjects' ? <CustomerProjectsPage /> : renderCustomerProjects(),
     quotations: renderQuotations(),
     leads: renderLeads(),
     import: renderImport(),
@@ -2108,44 +2101,10 @@ function App() {
   }
 
   return (
-    <Layout className="app-shell">
-      <Sider width={248} breakpoint="lg" collapsedWidth="0" className="app-sider">
-        <div className="brand-block">
-          <div className="brand-mark">启</div>
-          <div>
-            <Text strong>启效智联</Text>
-            <Text type="secondary" className="brand-subtitle">线索管理原型</Text>
-          </div>
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[currentPage]}
-          items={menuItems}
-          onClick={({ key }) => navigate(pagePaths[key as PageKey])}
-        />
-      </Sider>
-      <Layout>
-        <Header className="app-header" style={{ background: colorBgContainer }}>
-          <div>
-            <Text strong>汽车销售线索管理系统</Text>
-            <Text type="secondary" className="header-subtitle">Ant Design Pro 风格前端原型</Text>
-          </div>
-          <Space>
-            <Text type="secondary">当前角色</Text>
-            <Select<UserRole>
-              value={role}
-              className="role-select"
-              onChange={setRole}
-              options={[
-                { value: 'admin', label: '管理员' },
-                { value: 'operator', label: '运营' },
-                { value: 'other', label: '其他角色' },
-              ]}
-            />
-          </Space>
-        </Header>
-        <Content className="app-content">{pageMap[currentPage]}</Content>
-      </Layout>
+    <>
+      <ApplicationShell currentPage={currentPage} role={role} onRoleChange={setRole}>
+        {pageMap[currentPage]}
+      </ApplicationShell>
 
       <Modal
         title={editingLead ? '编辑线索' : '新增线索'}
@@ -3056,7 +3015,7 @@ function App() {
           </Space>
         ) : null}
       </Drawer>
-    </Layout>
+    </>
   )
 }
 
