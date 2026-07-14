@@ -74,6 +74,34 @@ test.describe('汽车销售线索管理系统', () => {
     expect(workbookRequests.length).toBeGreaterThan(0)
   })
 
+  test('keeps the desktop application shell styled and aligned', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name === 'chromium-mobile', 'Desktop shell geometry is covered by the desktop project.')
+
+    await page.goto('/')
+    await expect(page.locator('.app-sider')).toBeVisible()
+    await expect(page.locator('.app-header')).toBeVisible()
+    const layout = await page.evaluate(() => {
+      const sider = document.querySelector<HTMLElement>('.app-sider')
+      const header = document.querySelector<HTMLElement>('.app-header')
+      const content = document.querySelector<HTMLElement>('.app-content')
+
+      if (!sider || !header || !content) throw new Error('Application shell is missing.')
+
+      return {
+        siderWidth: Math.round(sider.getBoundingClientRect().width),
+        headerPosition: window.getComputedStyle(header).position,
+        siderBackground: window.getComputedStyle(sider).backgroundColor,
+        contentPaddingLeft: window.getComputedStyle(content).paddingLeft,
+      }
+    })
+
+    expect(layout.siderWidth).toBe(248)
+    expect(layout.headerPosition).toBe('sticky')
+    expect(layout.siderBackground).not.toBe('rgb(0, 21, 41)')
+    expect(layout.contentPaddingLeft).toBe('24px')
+    await page.screenshot({ path: testInfo.outputPath('desktop-shell.png'), fullPage: false })
+  })
+
   test('does not allow an edit form to bypass lead status transitions', async ({ page }) => {
     await page.goto('/leads')
 
