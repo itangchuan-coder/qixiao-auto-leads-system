@@ -370,6 +370,14 @@ docs/sop/
 
 ## 9. GitHub 和部署状态
 
+### 9.1 2026-07-14 Preview 验证
+
+- 已创建非 Production Preview：<https://qixiao-auto-leads-system-cvg2l6ogd-itangchuan-9342s-projects.vercel.app>
+- Vercel 部署检查显示目标为 `preview`、状态为 Ready，云端构建完成，运行日志中未发现构建失败。
+- 本地 `pnpm test`（8 个测试）、`pnpm lint` 和 `pnpm build` 均通过；初始入口脚本为 233.03 kB（原始大小），低于 500 kB，页面路由与 XLSX 按需资源均已生成。
+- 未认证浏览器直接访问该 Preview 时显示 `Login – Vercel`，而非应用页面。因此 `/`、`/leads` 和 `/customer-projects` 的直接访问、刷新和静态资源加载尚未完成应用级验收；在不修改 Vercel 访问策略或项目设置的前提下，不能继续验证。
+- 未创建 Production 部署。后续需由有权限的负责人确认 Preview 访问策略后，再重新执行线上路由验收；通过 Preview 验收并获得明确批准前，不得发布 Production。
+
 GitHub 已配置 SSH 推送。
 
 曾经遇到 HTTPS 推送不稳定，后改成 SSH，已成功推送。
