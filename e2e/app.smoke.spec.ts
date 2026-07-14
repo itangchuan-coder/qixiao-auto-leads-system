@@ -45,4 +45,22 @@ test.describe('汽车销售线索管理系统', () => {
       expect(consoleErrors).toEqual([])
     })
   }
+
+  test('loads the Excel writer only after lead export is requested', async ({ page }) => {
+    const workbookRequests: string[] = []
+    page.on('request', (request) => {
+      if (request.url().includes('xlsx')) workbookRequests.push(request.url())
+    })
+
+    await page.goto('/leads')
+    await expect(page.getByRole('heading', { name: '线索管理' })).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    expect(workbookRequests).toEqual([])
+
+    await page.locator('tbody .ant-checkbox-input:not([disabled])').first().check()
+    const download = page.waitForEvent('download')
+    await page.getByRole('button', { name: '导出所选' }).click()
+    await expect((await download).suggestedFilename()).toBe('汽车销售线索导出.xlsx')
+    expect(workbookRequests.length).toBeGreaterThan(0)
+  })
 })
