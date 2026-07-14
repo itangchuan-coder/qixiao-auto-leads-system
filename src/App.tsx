@@ -28,23 +28,31 @@ import {
   Upload,
   theme,
 } from 'antd'
-import type { MenuProps, TableColumnsType, UploadProps } from 'antd'
+import type { TableColumnsType, UploadProps } from 'antd'
 import {
-  AuditOutlined,
   CloudUploadOutlined,
   ExportOutlined,
   FieldTimeOutlined,
+  FolderOpenOutlined,
   PlusOutlined,
   WalletOutlined,
 } from '@ant-design/icons'
 import * as XLSX from 'xlsx'
 import './App.css'
 import { menuItems, pageByPath, pagePaths } from './app/navigation'
+import type { PageKey } from './app/navigation'
 import { SmartSelect } from './components/SmartSelect'
 import {
+  accountPeriodLabels,
   batchLeadNames,
   buildPersonalDashboard,
+  canEditLead,
   canManageFlow,
+  canTransitionCustomerProjectStatus,
+  canTransitionDealBaseStatus,
+  canTransitionLeadStatus,
+  canTransitionQuotationStatus,
+  customerProjectTypeLabels,
   createBatchId,
   createCustomerProjectId,
   createDealBaseId,
@@ -52,7 +60,13 @@ import {
   createLeadId,
   createQuotationId,
   createSupplierId,
+  paymentModeLabels,
+  platformBusinessNameLabels,
+  quotationContentTypeLabels,
+  requirementJudgementTypeLabels,
+  settlementModeLabels,
   findDuplicatePhones,
+  getIneligibleDeliveryLeadIds,
   dealBaseStatusLabels,
   customerProjectStatusLabels,
   getQuotationRiskTags,
@@ -63,6 +77,11 @@ import {
   resolveTargetName,
   roleLabels,
   statusLabels,
+  submissionMethodLabels,
+  supplierStatusLabels,
+  supplierTypeLabels,
+  supplyContentTypeLabels,
+  supplyTargetLabels,
 } from './domain/helpers'
 import {
   accountPeriodOptions,
@@ -453,9 +472,15 @@ function App() {
     setDealBaseModalOpen(true)
   }
 
-  const saveLead = (values: LeadFormValues) => {
+  const saveLead = (values: Omit<LeadFormValues, 'status'>) => {
+    if (!canEditLead(role)) {
+      message.warning('当前角色不能编辑线索')
+      return
+    }
+
     const duplicate = leads.some((lead) => lead.phone === values.phone && lead.id !== editingLead?.id)
-    const nextStatus = duplicate && values.status !== 'invalid' ? 'duplicate' : values.status
+    const currentStatus = editingLead?.status ?? 'new'
+    const nextStatus = duplicate && currentStatus !== 'invalid' ? 'duplicate' : currentStatus
 
     if (editingLead) {
       setLeads((prev) =>
@@ -477,9 +502,15 @@ function App() {
     setLeadModalOpen(false)
   }
 
-  const saveCustomerProject = (values: CustomerProjectFormValues) => {
+  const saveCustomerProject = (values: Omit<CustomerProjectFormValues, 'status'>) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能编辑客户项目')
+      return
+    }
+
     const normalized = {
       ...values,
+      status: editingCustomerProject?.status ?? 'pending',
       downPaymentAmount: Number(values.downPaymentAmount || 0),
       unitPrice: Number(values.unitPrice || 0),
       finalUnitPrice: Number(values.finalUnitPrice || 0),
@@ -502,9 +533,15 @@ function App() {
     customerProjectForm.resetFields()
   }
 
-  const saveQuotation = (values: QuotationFormValues) => {
+  const saveQuotation = (values: Omit<QuotationFormValues, 'status'>) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能编辑报价需求')
+      return
+    }
+
     const normalized = {
       ...values,
+      status: editingQuotation?.status ?? 'new',
       cityScope: values.cityScope ?? [],
       targetPrice: Number(values.targetPrice || 0),
       upstreamQuotePrice: Number(values.upstreamQuotePrice || 0),
@@ -528,6 +565,11 @@ function App() {
   }
 
   const simulateImport: UploadProps['beforeUpload'] = () => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能导入线索')
+      return false
+    }
+
     const imported: Lead[] = [
       {
         id: createLeadId(leads.length + 1),
@@ -569,8 +611,19 @@ function App() {
   }
 
   const createBatch = (values: { targetId: string; note: string }) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能创建交付批次')
+      return
+    }
+
     if (selectedLeadIds.length === 0) {
       message.warning('请先在线索管理中选择要交付的线索')
+      return
+    }
+
+    const ineligibleLeadIds = getIneligibleDeliveryLeadIds(leads, selectedLeadIds)
+    if (ineligibleLeadIds.length > 0) {
+      message.warning('交付批次仅可包含有效线索，请重新选择')
       return
     }
 
@@ -611,6 +664,11 @@ function App() {
   }
 
   const addTarget = (values: Omit<DeliveryTarget, 'id'>) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能新增交付对象')
+      return
+    }
+
     setTargets((prev) => [{ id: `T${String(prev.length + 1).padStart(3, '0')}`, ...values }, ...prev])
     setTargetModalOpen(false)
     targetForm.resetFields()
@@ -618,6 +676,11 @@ function App() {
   }
 
   const saveSupplier = (values: SupplierFormValues) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能编辑供应商')
+      return
+    }
+
     if (editingSupplier) {
       setSuppliers((prev) =>
         prev.map((supplier) => (supplier.id === editingSupplier.id ? { ...supplier, ...values } : supplier)),
@@ -632,12 +695,23 @@ function App() {
     supplierForm.resetFields()
   }
 
-  const saveDealBase = (values: DealBaseFormValues) => {
+  const saveDealBase = (values: Omit<DealBaseFormValues, 'status'>) => {
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能编辑成交产能')
+      return
+    }
+
     const normalized = {
       ...values,
+      status: editingDealBase?.status ?? 'to_contact',
       amount: Number(values.amount || 0),
-      isSuccess: values.status === 'success' ? true : values.status === 'failed' ? false : values.isSuccess,
-      companyBearsCost: values.status === 'failed' ? values.companyBearsCost : false,
+      isSuccess:
+        (editingDealBase?.status ?? 'to_contact') === 'success'
+          ? true
+          : (editingDealBase?.status ?? 'to_contact') === 'failed'
+            ? false
+            : values.isSuccess,
+      companyBearsCost: (editingDealBase?.status ?? 'to_contact') === 'failed' ? values.companyBearsCost : false,
     }
 
     if (editingDealBase) {
@@ -657,6 +731,11 @@ function App() {
   const updateLeadStatus = (lead: Lead, status: LeadStatus) => {
     if (!canManageFlow(role)) {
       message.warning('当前角色不能流转线索状态')
+      return
+    }
+
+    if (!canTransitionLeadStatus(lead.status, status)) {
+      message.warning('当前线索不能执行该状态流转')
       return
     }
 
@@ -688,6 +767,11 @@ function App() {
       return
     }
 
+    if (!canTransitionDealBaseStatus(record.status, status)) {
+      message.warning('当前成交产能不能执行该状态流转')
+      return
+    }
+
     setDealBaseRecords((prev) =>
       prev.map((item) =>
         item.id === record.id
@@ -709,6 +793,11 @@ function App() {
       return
     }
 
+    if (!canTransitionCustomerProjectStatus(project.status, status)) {
+      message.warning('当前客户项目不能执行该状态流转')
+      return
+    }
+
     setCustomerProjects((prev) => prev.map((item) => (item.id === project.id ? { ...item, status } : item)))
     message.success(`客户项目已流转为：${customerProjectStatusLabels[status]}`)
   }
@@ -719,12 +808,21 @@ function App() {
       return
     }
 
+    if (!canTransitionQuotationStatus(quotation.status, status)) {
+      message.warning('当前报价需求不能执行该状态流转')
+      return
+    }
+
     setQuotations((prev) => prev.map((item) => (item.id === quotation.id ? { ...item, status } : item)))
     message.success(`报价需求已流转为：${quotationStatusLabels[status]}`)
   }
 
   const addFollowUp = (values: { content: string }) => {
     if (!selectedDetailLead) return
+    if (!canManageFlow(role)) {
+      message.warning('当前角色不能添加跟进记录')
+      return
+    }
 
     setLeads((prev) =>
       prev.map((lead) =>
@@ -873,7 +971,7 @@ function App() {
       fixed: 'right',
       render: (_, lead) => (
         <Space wrap size={6}>
-          <Button size="small" onClick={() => openEditLead(lead)}>
+          <Button size="small" onClick={() => openEditLead(lead)} disabled={!canEditLead(role)}>
             编辑
           </Button>
           {(nextStatusOptions[lead.status] ?? []).map((status) => (
@@ -1767,7 +1865,7 @@ function App() {
         rowSelection={{
           selectedRowKeys: selectedLeadIds,
           onChange: (keys) => setSelectedLeadIds(keys.map(String)),
-          getCheckboxProps: () => ({ disabled: !canManageFlow(role) }),
+          getCheckboxProps: (lead) => ({ disabled: !canManageFlow(role) || lead.status !== 'valid' }),
         }}
         pagination={{ pageSize: 8 }}
       />
@@ -2081,9 +2179,11 @@ function App() {
           <Form.Item label="来源" name="source">
             <Input placeholder="例如：抖音线索" />
           </Form.Item>
-          <Form.Item label="状态" name="status">
-            <Select options={leadStatusOptions} />
-          </Form.Item>
+          {editingLead ? (
+            <Form.Item label="状态">
+              <Tag color={statusColor[editingLead.status]}>{statusLabels[editingLead.status]}</Tag>
+            </Form.Item>
+          ) : null}
           <Form.Item label="负责人" name="owner">
             <Input />
           </Form.Item>
@@ -2157,8 +2257,8 @@ function App() {
               <Input />
             </Form.Item>
           </div>
-          <Form.Item label="项目状态" name="status">
-            <Select options={customerProjectStatusOptions} />
+          <Form.Item label="项目状态">
+            <Tag>{customerProjectStatusLabels[editingCustomerProject?.status ?? 'pending']}</Tag>
           </Form.Item>
 
           <Title level={5}>业务与交付要求</Title>
@@ -2431,8 +2531,8 @@ function App() {
             <Form.Item label="渠道负责人" name="channelOwner">
               <Input />
             </Form.Item>
-            <Form.Item label="报价状态" name="status">
-              <Select options={quotationStatusOptions} />
+            <Form.Item label="报价状态">
+              <Tag>{quotationStatusLabels[editingQuotation?.status ?? 'new']}</Tag>
             </Form.Item>
           </div>
           <Form.Item label="需求备注" name="requirementNote">
@@ -2569,8 +2669,8 @@ function App() {
             <Form.Item label="是否有效" name="isValid">
               <Select options={[{ value: true, label: '有效' }, { value: false, label: '无效' }]} />
             </Form.Item>
-            <Form.Item label="交割状态" name="status">
-              <Select options={dealBaseStatusOptions} />
+            <Form.Item label="交割状态">
+              <Tag>{dealBaseStatusLabels[editingDealBase?.status ?? 'to_contact']}</Tag>
             </Form.Item>
           </div>
           <div className="modal-form-grid">

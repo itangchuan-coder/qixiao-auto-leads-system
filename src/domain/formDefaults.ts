@@ -1,13 +1,17 @@
 import {
   accountPeriodLabels,
+  customerProjectStatusTransitions,
   customerProjectStatusLabels,
   customerProjectTypeLabels,
   dealBaseStatusLabels,
+  dealBaseStatusTransitions,
+  leadStatusTransitions,
   paymentModeLabels,
   platformBusinessNameLabels,
   quotationContentTypeLabels,
   quotationSourceTypeLabels,
   quotationStatusLabels,
+  quotationStatusTransitions,
   requirementJudgementTypeLabels,
   settlementModeLabels,
   statusLabels,
@@ -20,16 +24,13 @@ import {
 import type {
   CustomerProjectFormValues,
   CustomerProjectSearchValues,
-  CustomerProjectStatus,
   DealBaseFormValues,
   DealBaseSearchValues,
-  DealBaseStatus,
   LeadFormValues,
   LeadSearchValues,
   LeadStatus,
   QuotationFormValues,
   QuotationSearchValues,
-  QuotationStatus,
   SupplierFormValues,
   SupplierSearchValues,
 } from './types'
@@ -261,41 +262,12 @@ export const defaultQuotationValues: QuotationFormValues = {
   quoteNote: '',
 }
 
-export const customerProjectNextStatusOptions: Partial<Record<CustomerProjectStatus, CustomerProjectStatus[]>> = {
-  pending: ['active', 'paused'],
-  active: ['paused', 'completed'],
-  paused: ['active', 'completed'],
-  completed: ['settled'],
-  settled: [],
-}
+export const customerProjectNextStatusOptions = customerProjectStatusTransitions
 
-export const dealBaseNextStatusOptions: Partial<Record<DealBaseStatus, DealBaseStatus[]>> = {
-  to_contact: ['connected', 'failed'],
-  connected: ['available', 'failed'],
-  available: ['reserved', 'failed'],
-  reserved: ['delivered', 'failed'],
-  delivered: ['success', 'failed'],
-  success: [],
-  failed: [],
-}
+export const dealBaseNextStatusOptions = dealBaseStatusTransitions
 
-export const quotationNextStatusOptions: Partial<Record<QuotationStatus, QuotationStatus[]>> = {
-  new: ['requirement_confirming', 'archived'],
-  requirement_confirming: ['sourcing', 'archived'],
-  sourcing: ['quoted', 'archived'],
-  quoted: ['won', 'lost'],
-  won: ['archived'],
-  lost: ['archived'],
-  archived: [],
-}
+export const quotationNextStatusOptions = quotationStatusTransitions
 
 export const statusFlow: LeadStatus[] = ['new', 'pending_clean', 'valid', 'delivered', 'invalid']
 
-export const nextStatusOptions: Partial<Record<LeadStatus, LeadStatus[]>> = {
-  new: ['pending_clean', 'invalid'],
-  pending_clean: ['valid', 'duplicate', 'invalid'],
-  valid: ['delivered', 'invalid'],
-  duplicate: ['valid', 'invalid'],
-  delivered: [],
-  invalid: [],
-}
+export const nextStatusOptions = leadStatusTransitions

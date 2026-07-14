@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { getQuotationRiskTags, quotationStatusLabels } from './helpers'
 import type { Quotation } from './types'
 
@@ -39,19 +40,18 @@ const baseQuotation: Quotation = {
   quoteNote: '',
 }
 
-if (quotationStatusLabels.quoted !== '已报价') {
-  throw new Error('报价状态标签应包含已报价')
-}
+describe('报价规则', () => {
+  it('识别二维码白名单和验证码风险', () => {
+    const tags = getQuotationRiskTags({
+      ...baseQuotation,
+      submissionMethod: 'qr_code',
+      canQrToLinkWhitelist: false,
+      requiresVerificationCode: true,
+      requiresDeal: true,
+      requiresArrival: true,
+    })
 
-const tags = getQuotationRiskTags({
-  ...baseQuotation,
-  submissionMethod: 'qr_code',
-  canQrToLinkWhitelist: false,
-  requiresVerificationCode: true,
-  requiresDeal: true,
-  requiresArrival: true,
+    expect(quotationStatusLabels.quoted).toBe('已报价')
+    expect(tags.map((tag) => tag.label)).toEqual(expect.arrayContaining(['二维码未白名单', '需验证码']))
+  })
 })
-
-if (!tags.some((tag) => tag.label === '二维码未白名单') || !tags.some((tag) => tag.label === '需验证码')) {
-  throw new Error('报价风险标签应识别二维码白名单和验证码要求')
-}

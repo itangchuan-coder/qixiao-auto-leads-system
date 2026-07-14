@@ -281,6 +281,63 @@ export const canViewFullPhone = (role: UserRole) => role === 'admin' || role ===
 
 export const canManageFlow = (role: UserRole) => role === 'admin' || role === 'operator'
 
+export const canEditLead = (role: UserRole) => canManageFlow(role)
+
+export const leadStatusTransitions: Partial<Record<LeadStatus, LeadStatus[]>> = {
+  new: ['pending_clean', 'invalid'],
+  pending_clean: ['valid', 'duplicate', 'invalid'],
+  valid: ['delivered', 'invalid'],
+  duplicate: ['valid', 'invalid'],
+  delivered: [],
+  invalid: [],
+}
+
+export const canTransitionLeadStatus = (from: LeadStatus, to: LeadStatus) =>
+  leadStatusTransitions[from]?.includes(to) ?? false
+
+export const customerProjectStatusTransitions: Partial<Record<CustomerProjectStatus, CustomerProjectStatus[]>> = {
+  pending: ['active', 'paused'],
+  active: ['paused', 'completed'],
+  paused: ['active', 'completed'],
+  completed: ['settled'],
+  settled: [],
+}
+
+export const canTransitionCustomerProjectStatus = (from: CustomerProjectStatus, to: CustomerProjectStatus) =>
+  customerProjectStatusTransitions[from]?.includes(to) ?? false
+
+export const quotationStatusTransitions: Partial<Record<QuotationStatus, QuotationStatus[]>> = {
+  new: ['requirement_confirming', 'archived'],
+  requirement_confirming: ['sourcing', 'archived'],
+  sourcing: ['quoted', 'archived'],
+  quoted: ['won', 'lost'],
+  won: ['archived'],
+  lost: ['archived'],
+  archived: [],
+}
+
+export const canTransitionQuotationStatus = (from: QuotationStatus, to: QuotationStatus) =>
+  quotationStatusTransitions[from]?.includes(to) ?? false
+
+export const dealBaseStatusTransitions: Partial<Record<DealBaseStatus, DealBaseStatus[]>> = {
+  to_contact: ['connected', 'failed'],
+  connected: ['available', 'failed'],
+  available: ['reserved', 'failed'],
+  reserved: ['delivered', 'failed'],
+  delivered: ['success', 'failed'],
+  success: [],
+  failed: [],
+}
+
+export const canTransitionDealBaseStatus = (from: DealBaseStatus, to: DealBaseStatus) =>
+  dealBaseStatusTransitions[from]?.includes(to) ?? false
+
+export const getIneligibleDeliveryLeadIds = (
+  leads: Array<Pick<Lead, 'id' | 'status'>>,
+  selectedLeadIds: string[],
+) =>
+  selectedLeadIds.filter((leadId) => leads.find((lead) => lead.id === leadId)?.status !== 'valid')
+
 export const maskPhone = (phone: string) => phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
 
 export const phoneForRole = (phone: string, role: UserRole) => (canViewFullPhone(role) ? phone : maskPhone(phone))
