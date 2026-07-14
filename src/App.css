@@ -74,6 +74,12 @@
   padding: 24px;
 }
 
+.route-loading {
+  display: grid;
+  min-height: calc(100vh - 112px);
+  place-items: center;
+}
+
 .page-stack,
 .full-width {
   width: 100%;
