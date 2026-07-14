@@ -27,12 +27,25 @@
 18. 提交代码：`git add . && git commit -m "本次更新说明"`。
 19. 推送代码：`git push`。
 
+## Vercel Preview 与 Production
+
+在完成本地检查后，按以下顺序进行线上发布验证：
+
+1. 使用临时 CLI 确认工具和当前登录账号：`pnpm dlx vercel@latest --version`、`pnpm dlx vercel@latest whoami`。账号或项目绑定与当前发布目标不一致时停止发布并联系管理员，不要重新绑定项目。
+2. 确认 `vercel.json` 使用 Vite 构建、`dist` 输出目录和单页应用 rewrite；`.vercel/` 与 `.env*` 必须保持未跟踪。
+3. 创建 Preview：`pnpm dlx vercel@latest --yes`。记录命令输出的 Preview 地址，但不记录任何令牌、环境变量或项目私密标识。
+4. 检查部署：`pnpm dlx vercel@latest inspect <preview-url>`；需要排查时使用 `pnpm dlx vercel@latest logs <preview-url>`。
+5. 在 Preview 直接打开并刷新 `/`、`/leads` 和 `/customer-projects`，确认静态资源、页面和浏览器控制台正常；完成桌面与移动端关键流程验收后，向用户汇报 Preview 结果和剩余风险。
+6. **暂停等待用户明确批准。** 只有收到 Production 批准后，才可执行 `pnpm dlx vercel@latest --prod --yes`。
+7. Production 完成后，再次直接打开并刷新上述三个路由，记录最终线上地址、构建结果、测试结果和剩余风险。
+
 ## 注意事项
 
 - 构建失败不能发布。
 - 业务流程和 SOP 不一致时，先修正 SOP。
 - 第一版是前端原型，刷新后数据可能丢失。
 - 如果 HTTPS 推送不稳定，优先使用 SSH 推送 GitHub。
+- Preview 验证通过不等同于 Production 发布批准；未经用户明确确认，不得执行带 `--prod` 的命令。
 
 ## 常见问题
 
