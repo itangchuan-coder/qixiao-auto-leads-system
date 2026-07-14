@@ -67,7 +67,7 @@ test.describe('汽车销售线索管理系统', () => {
     await page.waitForLoadState('networkidle')
     expect(workbookRequests).toEqual([])
 
-    await page.locator('tbody .ant-checkbox-input:not([disabled])').first().check()
+    await page.getByRole('checkbox', { name: 'Select row 1' }).check()
     const download = page.waitForEvent('download')
     await page.getByRole('button', { name: '导出所选' }).click()
     await expect((await download).suggestedFilename()).toBe('汽车销售线索导出.xlsx')
@@ -100,6 +100,7 @@ test.describe('汽车销售线索管理系统', () => {
 
     await expect(chenRow.getByText('13800138001')).toBeVisible()
     await expect(chenRow.getByRole('button', { name: '编辑' })).toBeEnabled()
+    await chenRow.locator('.ant-checkbox-input').check()
 
     await page.locator('.role-select').click()
     await chooseVisibleSelectOption(page, '运营')

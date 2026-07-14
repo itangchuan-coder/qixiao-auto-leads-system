@@ -1,3 +1,4 @@
+import '../../App.css'
 import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { App as AntApp, ConfigProvider, Result, Spin } from 'antd'
 import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
