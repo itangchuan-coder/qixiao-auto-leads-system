@@ -14,8 +14,8 @@ export default defineConfig({
   outputDir: '/tmp/qixiao-playwright-artifacts',
   use: {
     baseURL,
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    screenshot: 'on',
+    trace: 'on',
     video: 'retain-on-failure',
   },
   projects: [

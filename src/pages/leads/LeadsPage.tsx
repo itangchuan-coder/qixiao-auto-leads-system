@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { App as AntApp, Button, Card, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Timeline } from 'antd'
 import { ExportOutlined, PlusOutlined } from '@ant-design/icons'
 import { SmartSelect } from '../../components/SmartSelect'
@@ -27,12 +27,16 @@ export default function LeadsPage() {
     (!search.source || lead.source.includes(search.source)) && (!search.status || lead.status === search.status),
   ), [leads, search])
   const selectedDetail = detail ? leads.find((lead) => lead.id === detail.id) ?? detail : null
-  const openCreate = () => { setEditing(null); form.setFieldsValue(defaultLeadValues); setModalOpen(true) }
-  const openEdit = (lead: Lead) => { setEditing(lead); form.setFieldsValue(lead); setModalOpen(true) }
+  const openCreate = () => { setEditing(null); setModalOpen(true) }
+  const openEdit = (lead: Lead) => { setEditing(lead); setModalOpen(true) }
+  useEffect(() => {
+    if (modalOpen) form.setFieldsValue(editing ?? defaultLeadValues)
+  }, [editing, form, modalOpen])
   const saveLead = (values: LeadFormValues) => {
     if (!canEditLead(role)) { message.warning('当前角色不能编辑线索'); return }
     const duplicate = leads.some((lead) => lead.phone === values.phone && lead.id !== editing?.id)
-    const status = duplicate && values.status !== 'invalid' ? 'duplicate' : values.status
+    // Profile edits must never bypass the lead status transition rules.
+    const status = editing?.status ?? (duplicate ? 'duplicate' : 'new')
     if (editing) setLeads((current) => current.map((lead) => lead.id === editing.id ? { ...lead, ...values, status } : lead))
     else setLeads((current) => [{ id: createLeadId(current.length), ...values, status, createdAt: '2026-07-07 15:30', followUps: [] }, ...current])
     setModalOpen(false); message.success(duplicate ? '已保存，并标记为重复线索' : '线索已保存')
@@ -53,23 +57,23 @@ export default function LeadsPage() {
     const XLSX = await import('xlsx')
     const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), '线索'); XLSX.writeFile(workbook, '汽车销售线索导出.xlsx')
   }
-  return <PageScaffold title="线索管理" description="维护客户线索、清洗状态、重复标记与跟进记录。" actions={<><Button aria-label="导出所选" icon={<ExportOutlined />} onClick={exportSelected}>导出已选</Button><Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增线索</Button></>}>
+  return <PageScaffold title="线索管理" description="维护客户线索、清洗状态、重复标记与跟进记录。" actions={<><Button aria-label="导出所选" icon={<ExportOutlined />} onClick={exportSelected} disabled={!canManageFlow(role)}>导出已选</Button><Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!canEditLead(role)}>新增线索</Button></>}>
     <Card><Form form={searchForm} layout="inline" initialValues={defaultSearchValues} onValuesChange={(_, values) => setSearch(values)}>
       <Form.Item name="keyword"><Input allowClear placeholder="客户、手机、负责人" /></Form.Item><Form.Item name="city"><SmartSelect options={cityOptions} placeholder="城市" /></Form.Item><Form.Item name="brand"><SmartSelect options={brandOptions} placeholder="品牌" /></Form.Item><Form.Item name="status"><Select allowClear options={leadStatusOptions} placeholder="状态" style={{ minWidth: 120 }} /></Form.Item><Button onClick={() => { searchForm.setFieldsValue(defaultSearchValues); setSearch(defaultSearchValues) }}>重置</Button>
     </Form></Card>
-    <Card><Table rowKey="id" dataSource={filteredLeads} rowSelection={{ selectedRowKeys: selectedLeadIds, onChange: (keys) => setSelectedLeadIds(keys as string[]) }} columns={[
+    <Card><Table rowKey="id" dataSource={filteredLeads} scroll={{ x: 920 }} rowSelection={{ selectedRowKeys: selectedLeadIds, onChange: (keys) => setSelectedLeadIds(keys as string[]), getCheckboxProps: () => ({ disabled: !canManageFlow(role) }) }} columns={[
       { title: '客户', dataIndex: 'name', render: (_, lead: Lead) => <Button type="link" className="table-link" onClick={() => setDetail(lead)}>{lead.name}</Button> },
+      { title: '操作', width: 88, render: (_, lead: Lead) => <Button type="link" disabled={!canEditLead(role)} onClick={() => openEdit(lead)}>编辑</Button> },
       { title: '手机号', dataIndex: 'phone', render: (phone: string) => <Space>{phoneForRole(phone, role)}{duplicates.has(phone) ? <Tag color="orange">重复</Tag> : null}</Space> },
       { title: '意向车型', render: (_, lead: Lead) => `${lead.interestedBrand} ${lead.interestedModel}` }, { title: '来源', dataIndex: 'source' },
       { title: '状态', dataIndex: 'status', render: (status: LeadStatus) => <Tag>{statusLabels[status]}</Tag> }, { title: '负责人', dataIndex: 'owner' },
-      { title: '操作', render: (_, lead: Lead) => <Button type="link" disabled={!canEditLead(role)} onClick={() => openEdit(lead)}>编辑</Button> },
     ]} /></Card>
     <Modal open={modalOpen} title={editing ? '编辑线索' : '新增线索'} onCancel={() => setModalOpen(false)} onOk={() => form.submit()} destroyOnHidden><Form form={form} layout="vertical" onFinish={saveLead} initialValues={defaultLeadValues}>
       <div className="modal-form-grid"><Form.Item name="name" label="客户姓名" rules={[{ required: true, message: '请输入客户姓名' }]}><Input /></Form.Item><Form.Item name="phone" label="手机号" rules={[{ required: true, message: '请输入手机号' }]}><Input /></Form.Item></div>
       <div className="modal-form-grid"><Form.Item name="city" label="城市"><SmartSelect options={cityOptions} /></Form.Item><Form.Item name="interestedBrand" label="意向品牌"><SmartSelect options={[...automakerOptions, ...brandOptions]} /></Form.Item></div>
       <div className="modal-form-grid"><Form.Item name="interestedModel" label="意向车型"><SmartSelect options={modelOptions} /></Form.Item><Form.Item name="budget" label="预算"><Input /></Form.Item></div>
       <div className="modal-form-grid"><Form.Item name="purchaseTimeframe" label="购车时间"><Select options={Object.entries(purchaseTimeframeLabels).map(([value, label]) => ({ value, label }))} /></Form.Item><Form.Item name="source" label="来源"><Input /></Form.Item></div>
-      <div className="modal-form-grid"><Form.Item name="owner" label="负责人"><Input /></Form.Item><Form.Item name="status" label="状态"><Select options={leadStatusOptions} /></Form.Item></div><Form.Item name="note" label="备注"><Input.TextArea rows={3} /></Form.Item>
+      <div className="modal-form-grid"><Form.Item name="owner" label="负责人"><Input /></Form.Item></div><Form.Item name="note" label="备注"><Input.TextArea rows={3} /></Form.Item>
     </Form></Modal>
     <Drawer title="线索详情" open={Boolean(selectedDetail)} size="large" onClose={() => setDetail(null)}>{selectedDetail ? <Space orientation="vertical" className="page-stack" size={16}>
       <Card title={selectedDetail.name}><p>{phoneForRole(selectedDetail.phone, role)} · {selectedDetail.city} · {selectedDetail.interestedBrand} {selectedDetail.interestedModel}</p><p>来源：{selectedDetail.source}　负责人：{selectedDetail.owner}</p><Tag>{statusLabels[selectedDetail.status]}</Tag><Space wrap className="drawer-action-row">{(nextStatusOptions[selectedDetail.status] ?? []).map((status) => <Button key={status} disabled={!canManageFlow(role)} onClick={() => updateStatus(selectedDetail, status)}>流转为{statusLabels[status]}</Button>)}</Space></Card>
