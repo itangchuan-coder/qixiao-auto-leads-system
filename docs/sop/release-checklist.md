@@ -29,13 +29,14 @@
 
 ## Cloudflare Pages 自动发布
 
-GitHub 仓库的 `main` 分支使用 `.github/workflows/cloudflare-pages.yml` 自动发布到 Cloudflare Pages。
+GitHub 仓库的 `main` 分支使用 `.github/workflows/cloudflare-pages.yml` 自动发布到 Cloudflare Pages。PR 只执行验证，不会发布生产环境。
 
 1. GitHub Actions 中必须配置 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN` 两个 Repository Secret。
 2. Cloudflare Token 仅授予当前账户的 `Cloudflare Pages: Edit` 权限，不得写入仓库、文档或日志。
-3. 推送到 `main` 后，Actions 依次执行安装、测试、代码检查、构建和 Production 发布。任何一步失败都不得继续发布。
-4. 发布目标是 `qixiao-auto-leads-system` Pages 项目，线上域名是 `https://qinuo.hgengine.dpdns.org`。
-5. 发布完成后，直接打开并刷新 `/`、`/login` 和 `/leads`，确认 HTTPS、静态资源、浏览器控制台和手机布局正常。
+3. PR 打开或更新时，Actions 只执行安装、测试、代码检查和构建；任何一步失败都不得合并。
+4. 推送到 `main` 后，Actions 在验证通过后执行 Production 发布。
+5. 发布目标是已创建的 `qixiao-auto-leads-system` Pages 项目，使用 Direct Upload，不使用旧的 Workers Git 构建。
+6. 发布完成后，直接打开并刷新 `/`、`/login` 和 `/leads`，确认 HTTPS、静态资源、浏览器控制台和手机布局正常。
 
 ## Vercel Preview 与 Production
 
