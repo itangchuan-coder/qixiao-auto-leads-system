@@ -12,6 +12,7 @@ describe('线索流程规则', () => {
   it('不允许其他角色编辑线索', () => {
     expect(canEditLead('other')).toBe(false)
     expect(canEditLead('operator')).toBe(true)
+    expect(canEditLead('supervisor')).toBe(true)
   })
 
   it('不允许从终态重新流转线索', () => {

@@ -1,4 +1,18 @@
-export type UserRole = 'admin' | 'operator' | 'other'
+export type UserRole = 'admin' | 'supervisor' | 'operator' | 'other'
+
+export type SopAudience = 'supervisor' | 'operator' | 'shared'
+
+export interface SopDocument {
+  id: string
+  title: string
+  audience: SopAudience
+  version: string
+  updatedAt: string
+  publishedBy: string
+  summary: string
+  content: string
+  sourceFileName: string
+}
 
 export type LeadStatus =
   | 'new'

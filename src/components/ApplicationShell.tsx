@@ -52,6 +52,7 @@ export function ApplicationShell({ currentPage, role, onRoleChange, children }: 
               onChange={onRoleChange}
               options={[
                 { value: 'admin', label: '管理员' },
+                { value: 'supervisor', label: '主管' },
                 { value: 'operator', label: '运营' },
                 { value: 'other', label: '其他角色' },
               ]}

@@ -6,6 +6,7 @@ import { pageByPath } from '../../app/navigation'
 import type { PageKey } from '../../app/navigation'
 import { ApplicationShell } from '../ApplicationShell'
 import { useLeadSystemStore } from '../../domain/store'
+import { LoginPage } from '../../pages/auth/LoginPage'
 
 const DashboardPage = lazy(() => import('../../pages/workspace/DashboardPage'))
 const PersonalDashboardPage = lazy(() => import('../../pages/workspace/PersonalDashboardPage'))
@@ -41,6 +42,10 @@ function ShellLayout() {
   return <ApplicationShell currentPage={currentPage} role={role} onRoleChange={setRole}><Outlet /></ApplicationShell>
 }
 
+function LoginRoute() {
+  return <LoginPage onLogin={() => { window.location.assign('/') }} />
+}
+
 function NotFoundPage() {
   return <Result status="404" title="页面不存在" subTitle="请从左侧菜单选择可访问的工作区。" />
 }
@@ -67,6 +72,7 @@ export default function Application() {
     >
       <AntApp>
         <Routes>
+          <Route path="login" element={<LoginRoute />} />
           <Route element={<ShellLayout />}>
             <Route index element={<LazyRoute><DashboardPage /></LazyRoute>} />
             <Route path="personal-dashboard" element={<LazyRoute><PersonalDashboardPage /></LazyRoute>} />

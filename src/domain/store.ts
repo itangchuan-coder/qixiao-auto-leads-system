@@ -8,7 +8,8 @@ import {
   initialSuppliers,
   initialTargets,
 } from './mockData'
-import type { CustomerProject, DealBaseRecord, DeliveryBatch, DeliveryTarget, Lead, Quotation, Supplier, UserRole } from './types'
+import { initialSopDocuments } from './sopData'
+import type { CustomerProject, DealBaseRecord, DeliveryBatch, DeliveryTarget, Lead, Quotation, SopDocument, Supplier, UserRole } from './types'
 
 type StateUpdater<T> = T | ((previous: T) => T)
 
@@ -25,6 +26,7 @@ type LeadSystemStore = {
   dealBaseRecords: DealBaseRecord[]
   customerProjects: CustomerProject[]
   quotations: Quotation[]
+  sopDocuments: SopDocument[]
   selectedLeadIds: string[]
   setRole: (role: UserRole) => void
   setLeads: (updater: StateUpdater<Lead[]>) => void
@@ -34,6 +36,7 @@ type LeadSystemStore = {
   setDealBaseRecords: (updater: StateUpdater<DealBaseRecord[]>) => void
   setCustomerProjects: (updater: StateUpdater<CustomerProject[]>) => void
   setQuotations: (updater: StateUpdater<Quotation[]>) => void
+  setSopDocuments: (updater: StateUpdater<SopDocument[]>) => void
   setSelectedLeadIds: (selectedLeadIds: string[]) => void
 }
 
@@ -46,6 +49,7 @@ export const useLeadSystemStore = create<LeadSystemStore>((set) => ({
   dealBaseRecords: initialDealBaseRecords,
   customerProjects: initialCustomerProjects,
   quotations: initialQuotations,
+  sopDocuments: initialSopDocuments,
   selectedLeadIds: [],
   setRole: (role) => set({ role }),
   setLeads: (updater) => set((state) => ({ leads: resolveUpdater(state.leads, updater) })),
@@ -57,5 +61,6 @@ export const useLeadSystemStore = create<LeadSystemStore>((set) => ({
   setCustomerProjects: (updater) =>
     set((state) => ({ customerProjects: resolveUpdater(state.customerProjects, updater) })),
   setQuotations: (updater) => set((state) => ({ quotations: resolveUpdater(state.quotations, updater) })),
+  setSopDocuments: (updater) => set((state) => ({ sopDocuments: resolveUpdater(state.sopDocuments, updater) })),
   setSelectedLeadIds: (selectedLeadIds) => set({ selectedLeadIds }),
 }))

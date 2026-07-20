@@ -4,6 +4,7 @@
 
 ## 已建立 SOP
 
+- [登录工作台流程](./login.md)
 - [开发环境搭建](./development-setup.md)
 - [项目长期开发规范](./project-governance.md)
 - [页面开发流程](./page-development.md)
@@ -17,6 +18,9 @@
 - [供应商管理流程](./supplier-management.md)
 - [成交开拓基地流程](./deal-base.md)
 - [交付批次流程](./delivery-batch.md)
+- [运营岗位工作 SOP](./operator-workflow.md)
+- [主管岗位管控 SOP](./supervisor-governance.md)
+- [SOP 下载与发布流程](./sop-access-publishing.md)
 - [发布前检查](./release-checklist.md)
 
 ## 维护规则

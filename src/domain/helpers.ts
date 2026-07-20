@@ -24,6 +24,7 @@ import type {
   SupplyTarget,
   SupplierStatus,
   SupplierType,
+  SopDocument,
   UserRole,
 } from './types'
 
@@ -45,6 +46,7 @@ const accountPeriodDays: Record<AccountPeriod, number> = {
 
 export const roleLabels: Record<UserRole, string> = {
   admin: '管理员',
+  supervisor: '主管',
   operator: '运营',
   other: '其他角色',
 }
@@ -277,9 +279,17 @@ export const buildPersonalDashboard = ({
   }
 }
 
-export const canViewFullPhone = (role: UserRole) => role === 'admin' || role === 'operator'
+export const canViewFullPhone = (role: UserRole) => role === 'admin' || role === 'supervisor' || role === 'operator'
 
-export const canManageFlow = (role: UserRole) => role === 'admin' || role === 'operator'
+export const canManageFlow = (role: UserRole) => role === 'admin' || role === 'supervisor' || role === 'operator'
+
+export const canPublishSop = (role: UserRole) => role === 'admin' || role === 'supervisor'
+
+export const getDownloadableSops = (role: UserRole, documents: SopDocument[]) => {
+  if (role === 'admin' || role === 'supervisor') return documents
+  if (role === 'operator') return documents.filter((document) => document.audience === 'operator' || document.audience === 'shared')
+  return documents.filter((document) => document.audience === 'shared')
+}
 
 export const canEditLead = (role: UserRole) => canManageFlow(role)
 
@@ -364,6 +374,8 @@ export const createDealBaseId = (size: number) => `D${dayjs().format('YYYYMMDD')
 export const createCustomerProjectId = (size: number) => `P${dayjs().format('YYYYMMDD')}${String(size + 1).padStart(3, '0')}`
 
 export const createQuotationId = (size: number) => `Q${dayjs().format('YYYYMMDD')}${String(size + 1).padStart(3, '0')}`
+
+export const createSopId = (size: number) => `SOP${dayjs().format('YYYYMMDD')}${String(size + 1).padStart(3, '0')}`
 
 export const isContractExpiringSoon = (contractEnd: string) => {
   const end = dayjs(contractEnd)
