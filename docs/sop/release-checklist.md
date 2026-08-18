@@ -48,6 +48,7 @@ GitHub 仓库的 `main` 分支使用 `.github/workflows/cloudflare-pages.yml` �
 5. Supabase URL、publishable key、服务端密钥只能配置在部署平台 Secret 中，不得提交到仓库。
 6. 前端构建需要 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY`；缺失时只会运行原型模式，不能作为线上验收版本。
 7. 线上首次验收前，必须先创建管理员账号、组织和管理员成员关系，再测试 `/login`。
+8. 验收账户设置：修改自己的密码需要当前密码；管理员重置用户密码只能设置临时密码，不能读取原密码。
 
 ## Qinuo 检查站同步
 

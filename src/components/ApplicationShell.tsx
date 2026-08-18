@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Avatar, Button, Dropdown, Layout, Menu, Modal, Select, Space, Typography, theme } from 'antd'
+import { Alert, App as AntApp, Avatar, Button, Dropdown, Form, Input, Layout, Menu, Modal, Select, Space, Typography, theme } from 'antd'
 import { LogoutOutlined, SettingOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { menuItems, pagePaths } from '../app/navigation'
@@ -21,6 +21,8 @@ type ApplicationShellProps = {
 
 export function ApplicationShell({ currentPage, role, onRoleChange, roleLocked = false, children }: ApplicationShellProps) {
   const navigate = useNavigate()
+  const { message } = AntApp.useApp()
+  const [passwordForm] = Form.useForm<{ currentPassword: string; newPassword: string; confirmPassword: string }>()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [account, setAccount] = useState<{ displayName: string; email: string }>({ displayName: '当前用户', email: '' })
   const {
@@ -37,6 +39,19 @@ export function ApplicationShell({ currentPage, role, onRoleChange, roleLocked =
   const logout = async () => {
     if (supabase) await supabase.auth.signOut()
     setSettingsOpen(false)
+    navigate('/login', { replace: true })
+  }
+
+  const changePassword = async (values: { currentPassword: string; newPassword: string }) => {
+    if (!supabase || !account.email) { message.info('当前为本地演示账号，未连接真实密码服务'); return }
+    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: account.email, password: values.currentPassword })
+    if (verifyError) { message.error('当前密码不正确'); return }
+    const { error } = await supabase.auth.updateUser({ password: values.newPassword })
+    if (error) { message.error(error.message); return }
+    passwordForm.resetFields()
+    await supabase.auth.signOut()
+    setSettingsOpen(false)
+    message.success('密码已修改，请使用新密码重新登录')
     navigate('/login', { replace: true })
   }
 
@@ -101,7 +116,16 @@ export function ApplicationShell({ currentPage, role, onRoleChange, roleLocked =
         <Space orientation="vertical" size={16} className="account-settings">
           <Space><Avatar size={42} icon={<UserOutlined />} /><div><Typography.Text strong>{account.displayName}</Typography.Text><Typography.Text type="secondary" className="account-settings-email">{account.email || '本地演示账号'}</Typography.Text></div></Space>
           <Typography.Text type="secondary">当前角色：{roleLabels[role]}</Typography.Text>
-          <Button danger icon={<LogoutOutlined />} onClick={() => void logout()}>退出登录</Button>
+          <Alert type="info" showIcon message="修改密码需要先验证当前密码，管理员也无法查看你的原密码。" />
+          <Form form={passwordForm} layout="vertical" onFinish={changePassword}>
+            <Form.Item name="currentPassword" label="当前密码" rules={[{ required: true, message: '请输入当前密码' }]}><Input.Password autoComplete="current-password" /></Form.Item>
+            <Form.Item name="newPassword" label="新密码" rules={[{ required: true, min: 8, message: '新密码至少 8 位' }]}><Input.Password autoComplete="new-password" /></Form.Item>
+            <Form.Item name="confirmPassword" label="确认新密码" dependencies={['newPassword']} rules={[{ required: true, message: '请再次输入新密码' }, ({ getFieldValue }) => ({ validator(_, value) { return !value || getFieldValue('newPassword') === value ? Promise.resolve() : Promise.reject(new Error('两次输入的密码不一致')) } })]}><Input.Password autoComplete="new-password" /></Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">修改密码</Button>
+              <Button danger icon={<LogoutOutlined />} onClick={() => void logout()}>退出登录</Button>
+            </Space>
+          </Form>
         </Space>
       </Modal>
     </Layout>
