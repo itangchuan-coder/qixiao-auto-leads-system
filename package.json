@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.2",
+    "@supabase/supabase-js": "^2.112.3",
     "antd": "^6.5.0",
     "dayjs": "^1.11.21",
     "react": "^19.2.7",

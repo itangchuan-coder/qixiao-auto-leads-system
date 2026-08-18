@@ -1,12 +1,14 @@
 import '../../App.css'
-import { Component, lazy, Suspense, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { App as AntApp, ConfigProvider, Result, Spin } from 'antd'
-import { Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { pageByPath } from '../../app/navigation'
 import type { PageKey } from '../../app/navigation'
 import { ApplicationShell } from '../ApplicationShell'
 import { useLeadSystemStore } from '../../domain/store'
 import { LoginPage } from '../../pages/auth/LoginPage'
+import { isSupabaseConfigured, supabase } from '../../lib/supabase'
+import type { UserRole } from '../../domain/types'
 
 const DashboardPage = lazy(() => import('../../pages/workspace/DashboardPage'))
 const PersonalDashboardPage = lazy(() => import('../../pages/workspace/PersonalDashboardPage'))
@@ -39,11 +41,38 @@ function ShellLayout() {
   const setRole = useLeadSystemStore((state) => state.setRole)
   const currentPage = pageByPath[location.pathname] ?? ('dashboard' as PageKey)
 
-  return <ApplicationShell currentPage={currentPage} role={role} onRoleChange={setRole}><Outlet /></ApplicationShell>
+  return <ApplicationShell currentPage={currentPage} role={role} onRoleChange={setRole} roleLocked={isSupabaseConfigured}><Outlet /></ApplicationShell>
 }
 
 function LoginRoute() {
-  return <LoginPage onLogin={() => { window.location.assign('/') }} />
+  return <LoginPage />
+}
+
+function RequireAuthenticatedSession() {
+  const [ready, setReady] = useState(!isSupabaseConfigured)
+  const [signedIn, setSignedIn] = useState(false)
+  const setRole = useLeadSystemStore((state) => state.setRole)
+
+  useEffect(() => {
+    const database = supabase
+    if (!isSupabaseConfigured || !database) return
+    const initialize = async () => {
+      const { data: { session } } = await database.auth.getSession()
+      setSignedIn(Boolean(session))
+      if (session) {
+        const { data } = await database.from('organization_members').select('role').eq('profile_id', session.user.id).eq('is_active', true).maybeSingle()
+        if (data?.role) setRole(data.role as UserRole)
+      }
+      setReady(true)
+    }
+    void initialize()
+    const { data: { subscription } } = database.auth.onAuthStateChange((_event, session) => setSignedIn(Boolean(session)))
+    return () => subscription.unsubscribe()
+  }, [setRole])
+
+  if (!isSupabaseConfigured) return <Outlet />
+  if (!ready) return <div className="route-loading"><Spin size="large" /></div>
+  return signedIn ? <Outlet /> : <Navigate to="/login" replace />
 }
 
 function NotFoundPage() {
@@ -73,6 +102,7 @@ export default function Application() {
       <AntApp>
         <Routes>
           <Route path="login" element={<LoginRoute />} />
+          <Route element={<RequireAuthenticatedSession />}>
           <Route element={<ShellLayout />}>
             <Route index element={<LazyRoute><DashboardPage /></LazyRoute>} />
             <Route path="personal-dashboard" element={<LazyRoute><PersonalDashboardPage /></LazyRoute>} />
@@ -87,6 +117,7 @@ export default function Application() {
             <Route path="sop" element={<LazyRoute><SopPage /></LazyRoute>} />
             <Route path="permissions" element={<LazyRoute><PermissionsPage /></LazyRoute>} />
             <Route path="*" element={<NotFoundPage />} />
+          </Route>
           </Route>
         </Routes>
       </AntApp>

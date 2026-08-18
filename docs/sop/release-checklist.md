@@ -37,6 +37,26 @@ GitHub 仓库的 `main` 分支使用 `.github/workflows/cloudflare-pages.yml` �
 4. 推送到 `main` 后，Actions 在验证通过后执行 Production 发布。
 5. 发布目标是已创建的 `qixiao-auto-leads-system` Pages 项目，使用 Direct Upload，不使用旧的 Workers Git 构建。
 6. 发布完成后，直接打开并刷新 `/`、`/login` 和 `/leads`，确认 HTTPS、静态资源、浏览器控制台和手机布局正常。
+7. Qinuo 检查地址为 `https://qinuo.hgengine.dpdns.org`；注意不是无法解析的 `.con` 后缀。
+
+## Supabase 线上数据库更新
+
+1. 数据库结构变更必须新增 `supabase/migrations/*.sql`，禁止直接在生产控制台改表。
+2. 先在测试 Supabase 项目执行 migration，并验证 RLS、登录、线索新增/跟进/交付批次。
+3. 检查前端和 migration 使用同一提交版本，避免页面字段与数据库字段不一致。
+4. 生产执行前记录 migration 文件名、执行时间和测试结果；未通过测试不得执行。
+5. Supabase URL、publishable key、服务端密钥只能配置在部署平台 Secret 中，不得提交到仓库。
+6. 前端构建需要 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_PUBLISHABLE_KEY`；缺失时只会运行原型模式，不能作为线上验收版本。
+7. 线上首次验收前，必须先创建管理员账号、组织和管理员成员关系，再测试 `/login`。
+
+## Qinuo 检查站同步
+
+Qinuo 的地址、仓库/API 和认证方式确认后，发布流程必须增加：
+
+1. 将同一版本前端或测试数据发布/同步到 Qinuo。
+2. 在 `https://qinuo.hgengine.dpdns.org` 检查登录、工作台、线索和交付批次等核心页面。
+3. 记录 Qinuo 检查地址、版本号、检查结果和剩余问题。
+4. 未完成 Qinuo 验收前，不把该版本标记为可交付。
 
 ## Vercel Preview 与 Production
 

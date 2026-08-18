@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App as AntApp, Button, Card, Drawer, Form, Input, Modal, Select, Space, Table, Tag, Timeline } from 'antd'
 import { ExportOutlined, PlusOutlined } from '@ant-design/icons'
 import { SmartSelect } from '../../components/SmartSelect'
@@ -7,7 +7,9 @@ import { canEditLead, canManageFlow, canTransitionLeadStatus, createFollowUpId, 
 import { defaultLeadValues, defaultSearchValues, leadStatusOptions, nextStatusOptions } from '../../domain/formDefaults'
 import { matchesSmartValue } from '../../domain/search'
 import { useLeadSystemStore } from '../../domain/store'
+import { addRemoteFollowUp, createRemoteLead, fetchRemoteLeads, transitionRemoteLead, updateRemoteLead } from '../../domain/supabaseLeads'
 import type { Lead, LeadFormValues, LeadSearchValues, LeadStatus } from '../../domain/types'
+import { isSupabaseConfigured } from '../../lib/supabase'
 import { PageScaffold } from '../workflows/PageScaffold'
 
 export default function LeadsPage() {
@@ -20,6 +22,15 @@ export default function LeadsPage() {
   const [detail, setDetail] = useState<Lead | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [search, setSearch] = useState(defaultSearchValues)
+  const [remoteLoading, setRemoteLoading] = useState(false)
+  const remoteEnabled = isSupabaseConfigured
+  const reloadRemoteLeads = useCallback(async () => {
+    if (!remoteEnabled) return
+    setRemoteLoading(true)
+    try { setLeads(await fetchRemoteLeads()) }
+    catch (error) { message.error(error instanceof Error ? error.message : '线上线索加载失败') }
+    finally { setRemoteLoading(false) }
+  }, [message, remoteEnabled, setLeads])
   const duplicates = useMemo(() => findDuplicatePhones(leads), [leads])
   const filteredLeads = useMemo(() => leads.filter((lead) =>
     (!search.keyword || [lead.name, lead.phone, lead.owner].some((value) => value.includes(search.keyword))) &&
@@ -32,23 +43,36 @@ export default function LeadsPage() {
   useEffect(() => {
     if (modalOpen) form.setFieldsValue(editing ?? defaultLeadValues)
   }, [editing, form, modalOpen])
-  const saveLead = (values: LeadFormValues) => {
+  useEffect(() => { void reloadRemoteLeads() }, [reloadRemoteLeads])
+  const saveLead = async (values: LeadFormValues) => {
     if (!canEditLead(role)) { message.warning('当前角色不能编辑线索'); return }
     const duplicate = leads.some((lead) => lead.phone === values.phone && lead.id !== editing?.id)
     // Profile edits must never bypass the lead status transition rules.
     const status = editing?.status ?? (duplicate ? 'duplicate' : 'new')
-    if (editing) setLeads((current) => current.map((lead) => lead.id === editing.id ? { ...lead, ...values, status } : lead))
-    else setLeads((current) => [{ id: createLeadId(current.length), ...values, status, createdAt: '2026-07-07 15:30', followUps: [] }, ...current])
+    try {
+      if (remoteEnabled) {
+        if (editing) await updateRemoteLead(editing.id, values)
+        else await createRemoteLead(values, status)
+        await reloadRemoteLeads()
+      } else if (editing) setLeads((current) => current.map((lead) => lead.id === editing.id ? { ...lead, ...values, status } : lead))
+      else setLeads((current) => [{ id: createLeadId(current.length), ...values, status, createdAt: '2026-07-07 15:30', followUps: [] }, ...current])
+    } catch (error) { message.error(error instanceof Error ? error.message : '线索保存失败'); return }
     setModalOpen(false); message.success(duplicate ? '已保存，并标记为重复线索' : '线索已保存')
   }
-  const updateStatus = (lead: Lead, status: LeadStatus) => {
+  const updateStatus = async (lead: Lead, status: LeadStatus) => {
     if (!canManageFlow(role) || !canTransitionLeadStatus(lead.status, status)) { message.warning('当前线索不能执行该状态流转'); return }
-    setLeads((current) => current.map((item) => item.id === lead.id ? { ...item, status, followUps: [{ id: createFollowUpId(item.followUps.length), time: '2026-07-07 16:35', operator: roleLabels[role], content: `状态从“${statusLabels[item.status]}”流转为“${statusLabels[status]}”。` }, ...item.followUps] } : item))
+    try {
+      if (remoteEnabled) { await transitionRemoteLead(lead, status, roleLabels[role]); await reloadRemoteLeads() }
+      else setLeads((current) => current.map((item) => item.id === lead.id ? { ...item, status, followUps: [{ id: createFollowUpId(item.followUps.length), time: '2026-07-07 16:35', operator: roleLabels[role], content: `状态从“${statusLabels[item.status]}”流转为“${statusLabels[status]}”。` }, ...item.followUps] } : item))
+    } catch (error) { message.error(error instanceof Error ? error.message : '状态流转失败'); return }
     message.success(`线索已流转为：${statusLabels[status]}`)
   }
-  const addFollowUp = ({ content }: { content: string }) => {
+  const addFollowUp = async ({ content }: { content: string }) => {
     if (!selectedDetail || !canManageFlow(role)) { message.warning('当前角色不能添加跟进记录'); return }
-    setLeads((current) => current.map((lead) => lead.id === selectedDetail.id ? { ...lead, followUps: [{ id: createFollowUpId(lead.followUps.length), time: '2026-07-07 16:50', operator: roleLabels[role], content }, ...lead.followUps] } : lead))
+    try {
+      if (remoteEnabled) { await addRemoteFollowUp(selectedDetail.id, content); await reloadRemoteLeads() }
+      else setLeads((current) => current.map((lead) => lead.id === selectedDetail.id ? { ...lead, followUps: [{ id: createFollowUpId(lead.followUps.length), time: '2026-07-07 16:50', operator: roleLabels[role], content }, ...lead.followUps] } : lead))
+    } catch (error) { message.error(error instanceof Error ? error.message : '跟进记录保存失败'); return }
     followUpForm.resetFields(); message.success('跟进记录已添加')
   }
   const exportSelected = async () => {
@@ -61,7 +85,7 @@ export default function LeadsPage() {
     <Card><Form form={searchForm} layout="inline" initialValues={defaultSearchValues} onValuesChange={(_, values) => setSearch(values)}>
       <Form.Item name="keyword"><Input allowClear placeholder="客户、手机、负责人" /></Form.Item><Form.Item name="city"><SmartSelect options={cityOptions} placeholder="城市" /></Form.Item><Form.Item name="brand"><SmartSelect options={brandOptions} placeholder="品牌" /></Form.Item><Form.Item name="status"><Select allowClear options={leadStatusOptions} placeholder="状态" style={{ minWidth: 120 }} /></Form.Item><Button onClick={() => { searchForm.setFieldsValue(defaultSearchValues); setSearch(defaultSearchValues) }}>重置</Button>
     </Form></Card>
-    <Card><Table rowKey="id" dataSource={filteredLeads} scroll={{ x: 920 }} rowSelection={{ selectedRowKeys: selectedLeadIds, onChange: (keys) => setSelectedLeadIds(keys as string[]), getCheckboxProps: () => ({ disabled: !canManageFlow(role) }) }} columns={[
+    <Card><Table rowKey="id" loading={remoteLoading} dataSource={filteredLeads} scroll={{ x: 920 }} rowSelection={{ selectedRowKeys: selectedLeadIds, onChange: (keys) => setSelectedLeadIds(keys as string[]), getCheckboxProps: () => ({ disabled: !canManageFlow(role) }) }} columns={[
       { title: '客户', dataIndex: 'name', render: (_, lead: Lead) => <Button type="link" className="table-link" onClick={() => setDetail(lead)}>{lead.name}</Button> },
       { title: '操作', width: 88, render: (_, lead: Lead) => <Button type="link" disabled={!canEditLead(role)} onClick={() => openEdit(lead)}>编辑</Button> },
       { title: '手机号', dataIndex: 'phone', render: (phone: string) => <Space>{phoneForRole(phone, role)}{duplicates.has(phone) ? <Tag color="orange">重复</Tag> : null}</Space> },

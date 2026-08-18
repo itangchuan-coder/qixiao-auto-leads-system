@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Alert, Button, Checkbox, Form, Input, Typography } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
+import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 
 const { Text, Title } = Typography
 
-type LoginPageProps = { onLogin: () => void }
-
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const [error, setError] = useState('')
 
   return (
@@ -34,17 +33,21 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             requiredMark={false}
             className="login-form"
             initialValues={{ remember: true }}
-            onFinish={(values: { username: string; password: string }) => {
+            onFinish={async (values: { username: string; password: string }) => {
               if (!values.username?.trim() || !values.password) {
                 setError('请输入账号和密码')
                 return
               }
+              if (isSupabaseConfigured && supabase) {
+                const { error: signInError } = await supabase.auth.signInWithPassword({ email: values.username.trim(), password: values.password })
+                if (signInError) { setError(signInError.message); return }
+              }
               setError('')
-              onLogin()
+              window.location.assign('/')
             }}
           >
-            <Form.Item label="企业账号" name="username" rules={[{ required: true, message: '请输入企业账号' }]}>
-              <Input size="large" prefix={<UserOutlined />} placeholder="姓名 / 手机号" autoComplete="username" />
+            <Form.Item label={isSupabaseConfigured ? '企业邮箱' : '企业账号'} name="username" rules={[{ required: true, message: isSupabaseConfigured ? '请输入企业邮箱' : '请输入企业账号' }]}>
+              <Input size="large" prefix={<UserOutlined />} placeholder={isSupabaseConfigured ? 'name@example.com' : '姓名 / 手机号'} autoComplete="username" />
             </Form.Item>
             <Form.Item label="登录密码" name="password" rules={[{ required: true, message: '请输入登录密码' }]}>
               <Input.Password size="large" prefix={<LockOutlined />} placeholder="请输入密码" autoComplete="current-password" />
