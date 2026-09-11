@@ -1,0 +1,22 @@
+{
+  "name": "qixiao-business-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "agents": "0.22.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260911.1",
+    "@types/node": "24.13.2",
+    "ai": "7.0.0",
+    "typescript": "~6.0.2",
+    "wrangler": "4.131.0",
+    "zod": "4.6.1"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "qixiao-business-agent",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-11",
+  "durable_objects": {
+    "bindings": [{ "name": "BUSINESS_ASSISTANT", "class_name": "BusinessAssistant" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BusinessAssistant"] }],
+  "vars": {
+    "ALLOWED_ORIGIN": "https://qinuo.hgengine.dpdns.org"
+  }
+}

@@ -57,6 +57,15 @@ test.describe('汽车销售线索管理系统', () => {
     await expect(page.getByRole('button', { name: '返回登录' })).toBeVisible()
   })
 
+  test('opens the business assistant and guides a user with a shortcut', async ({ page }) => {
+    await page.goto('/')
+
+    await page.getByRole('button', { name: '业务助手' }).click()
+    await expect(page.getByText('你好，我是你的业务助手')).toBeVisible()
+    await page.getByText('查看我今天待跟进的线索').click()
+    await expect(page.getByText('当前助手已接入安全操作层')).toBeVisible()
+  })
+
   for (const [path, heading] of coreRoutes) {
     test(`${path} renders its primary workspace`, async ({ page }) => {
       const consoleErrors = recordConsoleErrors(page)

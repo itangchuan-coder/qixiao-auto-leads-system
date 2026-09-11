@@ -5,6 +5,7 @@
 ## 已建立 SOP
 
 - [登录工作台流程](./login.md)
+- [业务助手使用流程](./business-assistant.md)
 - [开发环境搭建](./development-setup.md)
 - [项目长期开发规范](./project-governance.md)
 - [页面开发流程](./page-development.md)

@@ -7,6 +7,7 @@ import type { PageKey } from '../app/navigation'
 import { roleLabels } from '../domain/helpers'
 import type { UserRole } from '../domain/types'
 import { supabase } from '../lib/supabase'
+import { BusinessAssistant } from './ai/BusinessAssistant'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
@@ -85,6 +86,7 @@ export function ApplicationShell({ currentPage, role, onRoleChange, roleLocked =
             <Text type="secondary" className="header-subtitle">Ant Design Pro 风格前端原型</Text>
           </div>
           <Space size={14}>
+            <BusinessAssistant />
             <Text type="secondary">当前角色</Text>
             <Select<UserRole>
               value={role}

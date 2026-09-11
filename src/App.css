@@ -149,6 +149,25 @@
 .account-settings { width: 100%; }
 .account-settings-email { display: block; margin-top: 2px; }
 
+.assistant-trigger { background: #2563eb; box-shadow: none; }
+.assistant-trigger:hover { background: #1d4ed8 !important; }
+.assistant-drawer-title { display: inline-flex; align-items: center; gap: 8px; }
+.business-assistant-drawer .ant-drawer-body { display: flex; min-height: 0; padding: 16px; }
+.business-assistant { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 16px; }
+.assistant-welcome { margin-top: 18px; }
+.assistant-welcome .ant-x-welcome-icon { color: #2563eb; }
+.assistant-prompts { flex: 1; }
+.assistant-messages { flex: 1; min-height: 0; }
+.business-assistant .ant-x-sender { margin-top: auto; }
+
+@media (max-width: 640px) {
+  .assistant-trigger { padding-inline: 8px; }
+  .business-assistant-drawer .ant-drawer-content-wrapper { width: 100% !important; }
+  .app-header { padding-inline: 14px; }
+  .header-subtitle, .app-header > div + .ant-space > .ant-typography { display: none; }
+  .account-name { display: none; }
+}
+
 .app-content {
   min-height: calc(100vh - 64px);
   padding: 24px;
