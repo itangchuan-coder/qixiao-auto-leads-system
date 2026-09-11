@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Button, Checkbox, Form, Input, Space, Typography } from 'antd'
+import { Alert, Button, Checkbox, Form, Input, Typography } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 
@@ -9,7 +9,12 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [forgotOpen, setForgotOpen] = useState(false)
   const [forgotSent, setForgotSent] = useState(false)
-  const [forgotForm] = Form.useForm<{ email: string }>()
+
+  const returnToLogin = () => {
+    setError('')
+    setForgotOpen(false)
+    setForgotSent(false)
+  }
 
   return (
     <main className="login-page">
@@ -27,11 +32,12 @@ export function LoginPage() {
       <section className="login-panel">
         <div className="login-form-wrap">
           <div className="login-mobile-brand"><span className="login-brand-mark">启</span><Text strong>启效智联</Text></div>
-          <Text className="login-eyebrow">欢迎回来</Text>
-          <Title level={2}>登录工作台</Title>
-          <Text type="secondary">使用你的企业账号继续</Text>
+          <Text className="login-eyebrow">{forgotOpen ? '账号安全' : '欢迎回来'}</Text>
+          <Title level={2}>{forgotOpen ? '发送密码重置邮件' : '登录工作台'}</Title>
+          <Text type="secondary">{forgotOpen ? '输入企业邮箱，我们会发送安全重置链接。' : '使用你的企业账号继续'}</Text>
           {error && <Alert className="login-alert" type="error" showIcon message={error} />}
-          <Form
+          {forgotSent && <Alert className="login-alert" type="success" showIcon message="如果该邮箱存在，重置邮件已发送，请检查收件箱和垃圾邮件。" />}
+          {!forgotOpen ? <Form
             layout="vertical"
             requiredMark={false}
             className="login-form"
@@ -57,23 +63,20 @@ export function LoginPage() {
             </Form.Item>
             <div className="login-options">
               <Form.Item name="remember" valuePropName="checked" noStyle><Checkbox>保持登录</Checkbox></Form.Item>
-              <Button type="link" className="login-help" onClick={() => { setError(''); setForgotOpen(true); setForgotSent(false); forgotForm.setFieldsValue({ email: '' }) }}>忘记密码？</Button>
+              <Button type="link" className="login-help" onClick={() => { setError(''); setForgotOpen(true); setForgotSent(false) }}>忘记密码？</Button>
             </div>
             <Button type="primary" htmlType="submit" size="large" block>进入工作台</Button>
-          </Form>
-          <Text type="secondary" className="login-footnote">首次登录或遇到账号问题，请联系管理员。</Text>
-          {forgotOpen && <div className="login-form forgot-form">
-            <Title level={4}>发送密码重置邮件</Title>
-            {forgotSent ? <Alert type="success" showIcon message="如果该邮箱存在，重置邮件已发送，请检查收件箱和垃圾邮件。" /> : <Form form={forgotForm} layout="vertical" onFinish={async ({ email }) => {
+          </Form> : <Form className="login-form" layout="vertical" onFinish={async ({ email }) => {
               if (!supabase || !isSupabaseConfigured) { setError('当前环境未连接密码服务，请联系管理员'); return }
               const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/reset-password` })
               if (resetError) { setError('邮件发送失败，请稍后重试或联系管理员'); return }
               setForgotSent(true)
             }}>
               <Form.Item name="email" label="企业邮箱" rules={[{ required: true, type: 'email', message: '请输入有效邮箱' }]}><Input autoComplete="email" /></Form.Item>
-              <Space><Button type="primary" htmlType="submit">发送邮件</Button><Button onClick={() => setForgotOpen(false)}>取消</Button></Space>
+              {!forgotSent && <Button type="primary" htmlType="submit" size="large" block>发送邮件</Button>}
+              <Button type="link" block onClick={returnToLogin}>返回登录</Button>
             </Form>}
-          </div>}
+          {!forgotOpen && <Text type="secondary" className="login-footnote">首次登录或遇到账号问题，请联系管理员。</Text>}
         </div>
       </section>
     </main>

@@ -57,7 +57,6 @@
 .login-form .ant-btn-primary:hover { background: #15566b !important; }
 .login-alert { margin-bottom: 16px; }
 .login-footnote { display: block; margin-top: 18px; text-align: center; font-size: 12px; }
-.forgot-form { margin-top: 16px; }
 
 @media (max-width: 780px) {
   .login-page { display: block; }

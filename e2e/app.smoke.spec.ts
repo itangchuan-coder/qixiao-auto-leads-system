@@ -47,6 +47,16 @@ test.describe('汽车销售线索管理系统', () => {
     await expect(page.getByRole('textbox', { name: '确认新密码', exact: true })).toBeVisible()
   })
 
+  test('replaces the login form with the password-reset request form', async ({ page }) => {
+    await page.goto('/login')
+
+    await page.getByRole('button', { name: '忘记密码？' }).click()
+    await expect(page.getByRole('heading', { name: '发送密码重置邮件' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '登录工作台' })).toHaveCount(0)
+    await expect(page.getByLabel('企业邮箱')).toBeVisible()
+    await expect(page.getByRole('button', { name: '返回登录' })).toBeVisible()
+  })
+
   for (const [path, heading] of coreRoutes) {
     test(`${path} renders its primary workspace`, async ({ page }) => {
       const consoleErrors = recordConsoleErrors(page)
