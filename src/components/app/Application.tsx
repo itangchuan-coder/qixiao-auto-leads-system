@@ -7,6 +7,7 @@ import type { PageKey } from '../../app/navigation'
 import { ApplicationShell } from '../ApplicationShell'
 import { useLeadSystemStore } from '../../domain/store'
 import { LoginPage } from '../../pages/auth/LoginPage'
+import { ResetPasswordPage } from '../../pages/auth/ResetPasswordPage'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import type { UserRole } from '../../domain/types'
 
@@ -102,6 +103,7 @@ export default function Application() {
       <AntApp>
         <Routes>
           <Route path="login" element={<LoginRoute />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route element={<RequireAuthenticatedSession />}>
           <Route element={<ShellLayout />}>
             <Route index element={<LazyRoute><DashboardPage /></LazyRoute>} />
