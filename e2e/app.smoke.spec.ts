@@ -39,6 +39,14 @@ async function navigateFromMenu(page: Page, label: RegExp) {
 }
 
 test.describe('汽车销售线索管理系统', () => {
+  test('provides a dedicated password-reset completion page', async ({ page }) => {
+    await page.goto('/reset-password')
+
+    await expect(page.getByRole('heading', { name: '设置新密码' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: '新密码', exact: true })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: '确认新密码', exact: true })).toBeVisible()
+  })
+
   for (const [path, heading] of coreRoutes) {
     test(`${path} renders its primary workspace`, async ({ page }) => {
       const consoleErrors = recordConsoleErrors(page)
