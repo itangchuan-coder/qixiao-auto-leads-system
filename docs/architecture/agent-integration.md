@@ -9,8 +9,8 @@
 - 前端入口：顶部“业务助手”按钮。
 - 前端组件：`@ant-design/x` 的 `Welcome`、`Prompts`、`Bubble.List` 和 `Sender`。
 - 连接协议：可选的 `VITE_CF_AGENT_URL`，请求携带当前 Supabase 用户 JWT。
-- Agent Worker：`cloudflare-agent/`，当前只验证用户身份并返回安全预览响应。
-- 数据写入：尚未开放，避免未审批的模型输出改变真实数据。
+- Agent Worker：`cloudflare-agent/`，验证用户身份后调用 DeepSeek，并通过受控工具访问 Supabase。
+- 数据写入：仅开放“新增跟进记录”这一条确认式写入；服务端会用当前用户 JWT 再次校验线索可见性和组织范围。
 
 ## 工具接入规则
 
@@ -27,4 +27,12 @@
 
 ## 下一阶段
 
-先接入只读的 `get_my_context`、`search_leads` 和 `get_dashboard_summary`，再接入需要确认的跟进记录和报价草稿。所有工具均通过 Supabase Edge Function 使用当前用户 JWT 和 RLS，不在浏览器或模型上下文中暴露 `service_role`。
+当前已接入 `search_leads`、`get_dashboard_summary`、`search_sop` 和确认式 `add_lead_follow_up`。下一步再逐个增加报价草稿、交付批次草稿等工具；每个工具都必须有参数校验、角色边界、确认等级和审计记录，不在浏览器或模型上下文中暴露 `service_role`。
+
+## 请求链路
+
+```text
+Ant Design X → Pages 前端 → Worker /chat → DeepSeek tool call
+                                      ↘ Supabase REST（当前用户 JWT + RLS）
+Worker /chat/confirm → 服务端复查线索 → lead_follow_ups 写入
+```

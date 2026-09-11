@@ -159,6 +159,8 @@
 .assistant-prompts { flex: 1; }
 .assistant-messages { flex: 1; min-height: 0; }
 .business-assistant .ant-x-sender { margin-top: auto; }
+.assistant-confirm-card { border-color: #f4c98a; background: #fffaf0; }
+.assistant-confirm-actions { margin-top: 12px; }
 
 @media (max-width: 640px) {
   .assistant-trigger { padding-inline: 8px; }

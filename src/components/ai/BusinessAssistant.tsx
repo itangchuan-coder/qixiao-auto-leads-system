@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Bubble, Prompts, Sender, Welcome, XProvider } from '@ant-design/x'
-import { App as AntApp, Button, Drawer, Tag, Typography } from 'antd'
-import { CloseOutlined, RobotOutlined, SendOutlined, ThunderboltOutlined } from '@ant-design/icons'
+import { App as AntApp, Button, Card, Drawer, Space, Tag, Typography } from 'antd'
+import { CheckOutlined, CloseOutlined, RobotOutlined, SendOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
@@ -9,6 +9,13 @@ type ChatMessage = {
   id: string
   role: 'ai' | 'user'
   content: string
+}
+
+type PendingAction = {
+  type: 'add_lead_follow_up'
+  lead_id: string
+  content: string
+  summary: string
 }
 
 const generalPrompts = [
@@ -47,6 +54,7 @@ export function BusinessAssistant() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const prompts = useMemo(() => promptsByPath[location.pathname] ?? generalPrompts, [location.pathname])
 
   const submit = async (rawMessage: string) => {
@@ -71,15 +79,46 @@ export function BusinessAssistant() {
       const response = await fetch(`${agentUrl.replace(/\/$/, '')}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
-        body: JSON.stringify({ message: text, page: location.pathname }),
+        body: JSON.stringify({
+          message: text,
+          page: location.pathname,
+          history: messages.slice(-10).map((item) => ({ role: item.role === 'ai' ? 'assistant' : 'user', content: item.content })),
+        }),
       })
-      const result = await response.json() as { reply?: string; error?: string }
+      const result = await response.json() as { reply?: string; error?: string; pendingAction?: PendingAction }
       if (!response.ok) throw new Error(result.error || '助手暂时无法处理该请求')
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'ai', content: result.reply || assistantReply(text) }])
+      setPendingAction(result.pendingAction ?? null)
     } catch (error) {
       const description = error instanceof Error ? error.message : '助手暂时无法处理该请求'
       notice.error(description)
       setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'ai', content: `未执行任何数据操作：${description}` }])
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const confirmPendingAction = async () => {
+    const agentUrl = import.meta.env.VITE_CF_AGENT_URL
+    if (!agentUrl || !pendingAction) return
+    const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } }
+    if (!data.session?.access_token) {
+      notice.error('请先登录后再确认操作')
+      return
+    }
+    setSending(true)
+    try {
+      const response = await fetch(`${agentUrl.replace(/\/$/, '')}/chat/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ action: pendingAction }),
+      })
+      const result = await response.json() as { message?: string; error?: string }
+      if (!response.ok) throw new Error(result.error || '操作未完成')
+      setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'ai', content: result.message || '操作已完成。' }])
+      setPendingAction(null)
+    } catch (error) {
+      notice.error(error instanceof Error ? error.message : '操作未完成')
     } finally {
       setSending(false)
     }
@@ -117,6 +156,13 @@ export function BusinessAssistant() {
               }}
             />}
             {sending && <Bubble loading placement="start" avatar={<RobotOutlined />} content="正在准备安全操作方案…" />}
+            {pendingAction && <Card className="assistant-confirm-card" size="small" title="请确认这项操作" extra={<Tag color="orange">需要确认</Tag>}>
+              <Typography.Text>{pendingAction.summary}</Typography.Text>
+              <Space className="assistant-confirm-actions">
+                <Button type="primary" icon={<CheckOutlined />} loading={sending} onClick={() => void confirmPendingAction()}>确认执行</Button>
+                <Button icon={<CloseOutlined />} disabled={sending} onClick={() => setPendingAction(null)}>取消</Button>
+              </Space>
+            </Card>}
             <Sender
               value={input}
               onChange={setInput}
